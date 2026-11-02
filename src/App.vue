@@ -6,6 +6,7 @@ const todoInput = ref('')
 
 const todos = ref([])
 const errorMessage = ref('')
+const loading = ref('')
 /**
  *  Get All Todos
  *  @returns {Promise<void>}
@@ -44,6 +45,7 @@ onMounted(() => {
 function addTodo() {
   const saveURL = "http://127.0.0.1:8000/api/todos";
   if (todoInput.value.trim() !== '' && todoInput.value.length <= 233) {
+    loading.value = true
     axios.post(saveURL, {
       todo_item: todoInput.value,
       done: false
@@ -58,10 +60,12 @@ function addTodo() {
         // console.log('RESPONSE todos:', response.data.data)
         // console.log('Fetched todos:', todos.value)
         todoInput.value = ''
+        loading.value = false
       })
       .catch(error => {
         errorMessage.value = error.response?.data?.message || 'Error adding todo'
         console.error('Error adding todo:', error)
+        loading.value = false
       })
   }else if(todoInput.value.length > 233) {
     errorMessage.value = 'Todo cannot exceed 233 characters'
@@ -139,21 +143,28 @@ function deleteTodo(id) {
     <div class="field">
       <label class="label">ToDo</label>
       <div class="control">
-        <textarea v-model="todoInput" class="textarea"  placeholder="Enter your todo"></textarea>
+        <textarea v-model="todoInput" class="textarea is-hovered shadow"  placeholder="Enter your todo"></textarea>
       </div>
       <p class="has-text-danger">{{ todoInput.length }} / 233 Characters should be added</p>
     </div>
 
-    <button type="submit" class="button is-primary">
+    <button type="submit" v-if="!loading" class="button is-primary" :disabled="todoInput.trim() === '' || todoInput.length > 233" >
       Add ToDo
     </button>
+    <button type="submit" v-else class="button is-primary is-loading" disabled>
+      Adding...
+    </button>
   </form>
-  <section class="hero is-warning">
-  <div class="hero-body" v-if="errorMessage">
-    <p class="title">Error:</p>
-    <p class="subtitle">{{ errorMessage }}</p>
-  </div>
-</section>
+
+  <article class="message is-danger" v-if="errorMessage">
+    <div class="message-header">
+      <p>Error Message: </p>
+      <button class="delete" aria-label="delete"></button>
+    </div>
+    <div class="message-body">
+      {{ errorMessage }}
+    </div>
+  </article>
   <div
     class="card mb-3 shadow p-2"
     v-for="todo in todos"
